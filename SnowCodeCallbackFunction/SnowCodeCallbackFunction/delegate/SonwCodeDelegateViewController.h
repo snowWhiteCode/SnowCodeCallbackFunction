@@ -25,5 +25,7 @@
 
 
 @protocol SonwCodeDelegateViewControllerDelegate<NSObject>//创建协议
+
 -(void)sonwCodeDelegateViewController:(SonwCodeDelegateViewController*)sonwCodeDelegateVc withDeleagteButton:(UIButton*)delageteButton;//声明协议方法
+
 @end

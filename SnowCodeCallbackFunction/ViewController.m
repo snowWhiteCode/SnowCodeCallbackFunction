@@ -10,14 +10,17 @@
 #import "SonwCodeDelegateViewController.h"
 #import "SnowCodeBlockViewController.h"
 #import "SnowCodeNotificationViewController.h"
+#import "SnowCodeGCDMulticastDelegateViewController.h"
+#import <XMPPFramework/GCDMulticastDelegate.h>
 extern NSString *const KViewControllerNotification;
 extern NSString *const KTableViewBackgroundColorKVO;
 NSString *const KTableViewBackgroundColorKVO = @"KTableViewBackgroundColorKVO";
-@interface ViewController ()<UITableViewDelegate,UITableViewDataSource,SonwCodeDelegateViewControllerDelegate>
+@interface ViewController ()<UITableViewDelegate,UITableViewDataSource,SonwCodeDelegateViewControllerDelegate,SnowCodeGCDMulticastDelegateViewControllerDelegate>
 
 @property (nonatomic, strong) UITableView *tableview;
 @property (nonatomic, strong) NSArray *dataSource;
 @property (nonatomic, strong) NSString *strKVO;
+@property (nonatomic, strong) GCDMulticastDelegate<SnowCodeGCDMulticastDelegateViewControllerDelegate> *multiDelegate;
 @end
 
 @implementation ViewController
@@ -36,6 +39,16 @@ NSString *const KTableViewBackgroundColorKVO = @"KTableViewBackgroundColorKVO";
    /*  注意：KVO可监听具有setProperty的属性，通过继承重写父类的setProperty方法，插入willChangeValueForKey 和didChangeValueForKey通知；而且，只能监听到通过调用setProperty方法而引起值变化的场景;也就是说，直接修改成员值时，KVO是无能为力的*/
     [self.strKVO addObserver:self forKeyPath:KTableViewBackgroundColorKVO options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:nil];
     
+    
+    /*
+     开源库XMPPFramework中提供了一个GCDMulticastDelegate类，使用它可以为一个对象添加多个被委托的对象
+     多播的delegate与通常的delegate不同，multiDelegate并没有实现协议中的方法，而是将协议中的方法转发到自己delegate链中的对象。   对multiDelegate对象调用test1方法时，由于GCDMulticastDelegate没有实现test1方法，因此该类的forwardInvocation函数会被触发，在该函数中会遍历delegate链，对每一个delegate对象调用test1方法，从而实现了多个delegate。同时，在对multiDelegate调用协议方法时，采用的是异步的方式，协议方法会立刻返回，不会阻碍当前函数。*/
+    SnowCodeNotificationViewController *vcNotification = [[SnowCodeNotificationViewController alloc]init];
+    SnowCodeBlockViewController *backVc = [[SnowCodeBlockViewController alloc]init];
+    [self.multiDelegate addDelegate:backVc delegateQueue:dispatch_get_main_queue()];
+    [self.multiDelegate addDelegate:vcNotification delegateQueue:dispatch_get_main_queue()];
+    /*调用所有类里使用该delegate的代理方法,是异步的顺序不固定，也不会阻塞线程*/
+    [self.multiDelegate snowCodeGCDMulticastDelegateViewController:nil withGCDMulticastDelegateButton:nil];
 }
 
 -(void)viewWillLayoutSubviews
@@ -76,7 +89,14 @@ NSString *const KTableViewBackgroundColorKVO = @"KTableViewBackgroundColorKVO";
     [self.strKVO removeObserver:self forKeyPath:KTableViewBackgroundColorKVO context:nil];
 }
 
-#pragma mark -- SonwCodeDelegateViewControllerDelegate
+#pragma mark - SnowCodeGCDMulticastDelegateViewControllerDelegate
+-(void)snowCodeGCDMulticastDelegateViewController:(SnowCodeGCDMulticastDelegateViewController *)snowCodeGCDMulticastDelegateVc withGCDMulticastDelegateButton:(UIButton *)delageteButton
+{
+   
+
+}
+
+#pragma mark - SonwCodeDelegateViewControllerDelegate
 -(void)sonwCodeDelegateViewController:(SonwCodeDelegateViewController *)sonwCodeDelegateVc withDeleagteButton:(UIButton *)delageteButton
 {
     self.tableview.backgroundColor = [UIColor redColor];
@@ -111,6 +131,7 @@ NSString *const KTableViewBackgroundColorKVO = @"KTableViewBackgroundColorKVO";
             SnowCodeBlockViewController *backVc = [[SnowCodeBlockViewController alloc]init];
             backVc.block = ^(UIColor *color) {
                self.tableview.backgroundColor = color;
+               
             };
             [self presentViewController:backVc animated:YES completion:^{
                 
@@ -122,10 +143,20 @@ NSString *const KTableViewBackgroundColorKVO = @"KTableViewBackgroundColorKVO";
             [self presentViewController:vcNotification animated:YES completion:^{
                 
             }];
+            
         }
             break;
         case 3:{
             self.strKVO = @"OK";
+        }
+            break;
+        case 4:{
+            SnowCodeGCDMulticastDelegateViewController *vcDelegate = [[SnowCodeGCDMulticastDelegateViewController alloc]init];
+            vcDelegate.delegate = self;
+            [self presentViewController:vcDelegate animated:YES completion:^{
+                
+            }];
+            
         }
             break;
             
@@ -155,5 +186,11 @@ NSString *const KTableViewBackgroundColorKVO = @"KTableViewBackgroundColorKVO";
     return _dataSource;
 }
 
-
+-(GCDMulticastDelegate<SnowCodeGCDMulticastDelegateViewControllerDelegate> *)multiDelegate
+{
+    if (_multiDelegate == nil) {
+        _multiDelegate = (GCDMulticastDelegate <SnowCodeGCDMulticastDelegateViewControllerDelegate> *)[[GCDMulticastDelegate alloc] init];
+    }
+    return _multiDelegate;
+}
 @end

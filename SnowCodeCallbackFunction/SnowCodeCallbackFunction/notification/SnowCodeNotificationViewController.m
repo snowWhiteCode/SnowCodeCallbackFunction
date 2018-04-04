@@ -7,8 +7,10 @@
 //
 
 #import "SnowCodeNotificationViewController.h"
+#import "SnowCodeGCDMulticastDelegateViewController.h"
+
 NSString *const KViewControllerNotification = @"KViewControllerNotification";
-@interface SnowCodeNotificationViewController ()
+@interface SnowCodeNotificationViewController ()<SnowCodeGCDMulticastDelegateViewControllerDelegate>
 @property (nonatomic, strong) UIButton *notificationButton;
 
 @end
@@ -19,12 +21,20 @@ NSString *const KViewControllerNotification = @"KViewControllerNotification";
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor whiteColor];
     [self.view addSubview:self.notificationButton];
+    SnowCodeGCDMulticastDelegateViewController *vc = [[SnowCodeGCDMulticastDelegateViewController alloc]init];
+    vc.delegate = self;
 }
 
 -(void)viewWillLayoutSubviews
 {
     [super viewWillLayoutSubviews];
     self.notificationButton.frame = CGRectMake((self.view.frame.size.width - 100)/2 , (self.view.frame.size.height - 50)/2, 100, 50);
+}
+
+#pragma mark -- SnowCodeGCDMulticastDelegateViewControllerDelegate
+-(void)snowCodeGCDMulticastDelegateViewController:(SnowCodeGCDMulticastDelegateViewController *)snowCodeGCDMulticastDelegateVc withGCDMulticastDelegateButton:(UIButton *)delageteButton
+{
+    NSLog(@"one");
 }
 
 #pragma mark -- event
